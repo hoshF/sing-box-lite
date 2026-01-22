@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+
+	"github.com/hoshF/sing-box-lite/inbound/socks"
 )
 
 func main() {
@@ -30,4 +32,8 @@ func handleConnection(conn net.Conn) {
 
 	clientAddr := conn.RemoteAddr().String()
 	fmt.Printf("new connection: %s\n", clientAddr)
+
+	if err := socks.HandleConnection(conn); err != nil {
+		fmt.Printf("Handle fail: %v\n", err)
+	}
 }
