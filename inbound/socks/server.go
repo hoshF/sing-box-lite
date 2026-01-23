@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/hoshF/sing-box-lite/outbound"
+	"github.com/hoshF/sing-box-lite/transport"
 )
 
 const (
@@ -66,6 +67,14 @@ func HandleConnection(conn net.Conn, out outbound.Outbound) error {
 	if err := sendReply(conn, RepSuccess); err != nil {
 		return fmt.Errorf("Send reply faild: %w", err)
 	}
+
+	fmt.Println("Starting Relay data...")
+	if err := transport.Relay(conn, targetConn); err != nil {
+		if err != io.EOF {
+			return fmt.Errorf("Relay error: %w", err)
+		}
+	}
+	fmt.Println("Connect close")
 
 	return nil
 }
