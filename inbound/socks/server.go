@@ -1,12 +1,14 @@
 package socks
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"slices"
-	"encoding/binary"
+
+	"github.com/hoshF/sing-box-lite/outbound"
 )
 
 const (
@@ -38,7 +40,7 @@ func (r *Request) Address() string {
 	return fmt.Sprintf("%s:%d", r.Host, r.Port)
 }
 
-func HandleConnection(conn net.Conn) error {
+func HandleConnection(conn net.Conn, out outbound.Outbound) error {
 	if err := handleHandshake(conn); err != nil {
 		return fmt.Errorf("Handshake failed: %w", err)
 	}
@@ -52,7 +54,19 @@ func HandleConnection(conn net.Conn) error {
 
 	fmt.Printf("destination: %s\n", request.Address())
 
-	sendReply(conn, RepSuccess)
+	targetConn, err := out.Dial(request.Address())
+	if err != nil {
+		sendReply(conn, RepHostUnreachable)
+		return fmt.Errorf("Outbound connect faild: %w", err)
+	}
+	defer targetConn.Close()
+
+	fmt.Printf("Connected to  %s (through %s)\n", request.Address(), out.Name())
+
+	if err := sendReply(conn, RepSuccess); err != nil {
+		return fmt.Errorf("Send reply faild: %w", err)
+	}
+
 	return nil
 }
 
